@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>iReport SQL Format</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+</head>
+
+<body>
+
+	<style>
+		.title {
+			background-color: #e9ecef;
+			border-radius: .3rem;
+			height: 10vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			margin-bottom: 1rem;
+		}
+	</style>
+
+	<div class="title text-center">
+		<h1>iReport SQL Format</h1>
+	</div>
+
+	<div id="app" class="row p-2">
+		<div class="col-4">
+			<table class="table table-bordered">
+				<thead>
+					<tr>
+						<th>key</th>
+						<th>value</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					<template v-if="paramList.length > 0">
+						<tr v-for="(param, index) in paramList">
+							<td><input v-model="param.key" type="text" class="form-control"></td>
+							<td><input v-model="param.value" type="text" class="form-control"></td>
+							<td><button v-on:click="removeParam(param.index)" type="button" class="btn btn-danger">刪除</button></td>
+						</tr>
+					</template>
+					<tr>
+						<td><input v-model="newParamKey" type="text" class="form-control"></td>
+						<td><input v-model="newParamValue" type="text" class="form-control"></td>
+						<td>
+							<button v-on:click="addParam" 
+											type="button" 
+											class="btn btn-success"
+											:disabled="!newParamKey || !newParamValue">
+								增加
+							</button>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<!-- <template v-if="allKeyString">
+								{{ allKeyString }}
+							</template> -->
+						</td>
+						<td></td>
+						<td>
+							<button v-on:click="formatSQL" 
+										  type="button"  
+								  		v-bind:class="{ 'btn btn-light': paramList.length == 0, 'btn btn-primary': paramList.length > 0 }" 
+									  	:disabled="paramList.length == 0">
+								格式化
+							</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="col-8">
+			<div style="height: 40vh;">
+				<p>SQL</p>
+				<textarea style="height: 80%;width: 100%;" v-on:change="getAllKey" v-model="inputText">
+				</textarea>
+			</div>
+			<div style="height: 40vh;">
+				<p>結果</p>
+				<textarea style="height: 80%;width: 100%;" v-model="outputText">
+				</textarea>
+			</div>
+		</div>
+	</div>
+	<script>
+		var app = new Vue({
+			el: '#app',
+			data: {
+				inputText: '',
+				outputText: '',
+				allKeyString: '',
+				paramList: [],
+				newParamKey: '',
+				newParamValue: '',
+				paramIndex: 0
+			},
+			methods: {
+				getAllKey: function() {
+					const allKey = [...new Set(this.inputText.split('$P{').filter(s => s.includes('}')).map((s) => s.split('}')[0]))];
+					this.allKeyString = allKey.join(', ');
+					allKey.forEach(key => {
+						const param = {
+							key,
+							value: "''",
+							index: this.paramIndex
+						};
+						this.paramList.push(param);
+						this.paramIndex += 1;
+					})
+				},
+				formatSQL: function () {
+					this.paramList.forEach((param, index) => {
+						const { key, value } = param;
+						if (index === 0) {
+							this.outputText = this.inputText.split(`$P{${key}}`).join(value);
+							return;
+						}
+						this.outputText = this.outputText.split(`$P{${key}}`).join(value);
+					});
+				},
+				addParam: function () {
+					const param = {
+						key: this.newParamKey,
+						value: this.newParamValue,
+						index: this.paramIndex
+					};
+					this.paramList.push(param);
+					this.paramIndex += 1;
+					this.newParamKey = '';
+					this.newParamValue = '';
+				},
+				removeParam: function (index) {
+					this.paramList = this.paramList.filter(p => p.index !== index);
+				}
+			}
+		})
+	</script>
+</body>
+
+</html>
